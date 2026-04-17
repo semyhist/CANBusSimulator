@@ -7,6 +7,11 @@
 #define ID_MOTOR_YAKIT  0x102
 #define ID_ABS_TEKERLEK 0x200
 #define ID_ABS_FREN     0x201
+#define ID_AIRBAG       0x300
+#define ID_KLIMA        0x301
+#define ID_DIREKSIYON   0x302
+#define ID_KABIN        0x303
+#define ID_LASTIK       0x304
 
 /* her id icin beklenen deger araliklari */
 #define RPM_MIN     0

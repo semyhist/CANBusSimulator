@@ -1,9 +1,10 @@
 /* Dairesel gösterge — RPM ve hız için */
 export default function Gauge({ label, value, min, max, unit, renk }) {
-  const aci_baslangic = 135;   /* sol alt */
-  const aci_aralik    = 270;   /* toplam açı */
+  const aci_baslangic = 135;
+  const aci_aralik    = 270;
 
-  const yuzde  = Math.min(Math.max((value - min) / (max - min), 0), 1);
+  const safeValue = (value == null || isNaN(value)) ? min : value;
+  const yuzde  = (max === min) ? 0 : Math.min(Math.max((safeValue - min) / (max - min), 0), 1);
   const aci    = aci_baslangic + yuzde * aci_aralik;
 
   /* SVG arc hesabı */
@@ -43,7 +44,7 @@ export default function Gauge({ label, value, min, max, unit, renk }) {
         <path
           d={arcPath(aci_baslangic, aci)}
           fill="none"
-          stroke={renk}
+          stroke="#555"
           strokeWidth="12"
           strokeLinecap="round"
         />
@@ -53,12 +54,12 @@ export default function Gauge({ label, value, min, max, unit, renk }) {
           y1={cy}
           x2={ibre.x}
           y2={ibre.y}
-          stroke="white"
-          strokeWidth="2"
+          stroke="#888"
+          strokeWidth="1.5"
           strokeLinecap="round"
         />
         {/* merkez nokta */}
-        <circle cx={cx} cy={cy} r="5" fill={renk} />
+        <circle cx={cx} cy={cy} r="3" fill="#555" />
         {/* değer */}
         <text x={cx} y={cy + 30} textAnchor="middle" fill="white" fontSize="22" fontWeight="bold">
           {value}

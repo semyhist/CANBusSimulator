@@ -4,15 +4,17 @@
 #include "can_node.h"
 
 /* mesaj id'leri */
-#define MOTOR_RPM_ID    0x100
-#define MOTOR_SICAK_ID  0x101
-#define MOTOR_YAKIT_ID  0x102
+#include "can_ids.h"
+#define MOTOR_RPM_ID    ID_MOTOR_RPM
+#define MOTOR_SICAK_ID  ID_MOTOR_SICAK
+#define MOTOR_YAKIT_ID  ID_MOTOR_YAKIT
 
 typedef struct {
     CANNode node;
     int     rpm;            /* devir/dakika */
     int     sicaklik;       /* celsius */
     int     yakit_seviyesi; /* yuzde 0-100 */
+    int     yakit_adim;     /* azalma sayaci */
 } MotorECU;
 
 void motor_baslat(MotorECU *ecu, CANBus *bus);

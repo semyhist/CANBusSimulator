@@ -14,6 +14,7 @@ int logger_baslat(CANLogger *logger, const char *dosya_adi)
         return -1;
 
     logger->mesaj_sayisi = 0;
+    logger->max_satir    = MAX_LOG_BOYUTU;
     return 0;
 }
 
@@ -22,6 +23,10 @@ void logger_yaz(CANLogger *logger, CANFrame *frame, double timestamp)
     int i;
 
     if (logger->dosya == NULL || frame == NULL)
+        return;
+
+    /* max boyuta ulastiysa yeni satir yazma */
+    if (logger->mesaj_sayisi >= logger->max_satir)
         return;
 
     /* timestamp ve id yaz */

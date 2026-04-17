@@ -4,9 +4,12 @@
 #include <stdio.h>
 #include "can_frame.h"
 
+#define MAX_LOG_BOYUTU 5000  /* maksimum satir sayisi */
+
 typedef struct {
     FILE *dosya;
     int   mesaj_sayisi;
+    int   max_satir;
 } CANLogger;
 
 /* log dosyasini acar, basarili olursa 0 doner */

@@ -13,18 +13,24 @@ void motor_guncelle(MotorECU *ecu)
 {
     unsigned char data[2];
 
-    /* rpm: 800 ile 6000 arasinda rastgele degissin */
-    ecu->rpm += (rand() % 201) - 100; /* -100 ile +100 arasi */
-    if (ecu->rpm < 800)  ecu->rpm = 800;
-    if (ecu->rpm > 6000) ecu->rpm = 6000;
+    /* motor sogukken rpm dusuk kalsin, isininca normal araliga gec */
+    int rpm_max = (ecu->sicaklik < 60) ? 1500 : 6000;
+    int rpm_min = (ecu->sicaklik < 40) ? 800  : 800;
+    ecu->rpm += (rand() % 201) - 100;
+    if (ecu->rpm < rpm_min) ecu->rpm = rpm_min;
+    if (ecu->rpm > rpm_max) ecu->rpm = rpm_max;
 
-    /* sicaklik: yavas yavas 90'a dogru cikar */
+    /* soguk motordan 90 dereceye yavas isin, sonra sabit kal */
     if (ecu->sicaklik < 90)
-        ecu->sicaklik += rand() % 3;
+        ecu->sicaklik += 1;
 
-    /* yakit: her adimda biraz azalsin */
-    if (ecu->yakit_seviyesi > 0)
-        ecu->yakit_seviyesi--;
+    /* yakit: her 50 adimda bir azalsin */
+    ecu->yakit_adim++;
+    if (ecu->yakit_adim >= 50) {
+        ecu->yakit_adim = 0;
+        if (ecu->yakit_seviyesi > 0)
+            ecu->yakit_seviyesi--;
+    }
 
     /* rpm'i 2 byte olarak gonder (big-endian) */
     data[0] = (ecu->rpm >> 8) & 0xFF;

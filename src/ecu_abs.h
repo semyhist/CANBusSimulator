@@ -3,8 +3,9 @@
 
 #include "can_node.h"
 
-#define ABS_TEKERLEK_ID 0x200
-#define ABS_FREN_ID     0x201
+#include "can_ids.h"
+#define ABS_TEKERLEK_ID ID_ABS_TEKERLEK
+#define ABS_FREN_ID     ID_ABS_FREN
 
 typedef struct {
     CANNode node;

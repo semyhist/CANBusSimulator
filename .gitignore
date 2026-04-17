@@ -2,9 +2,11 @@
 *.exe
 *.o
 *.out
+bin/
 
 # Log dosyaları
 *.log
+logs/
 
 # JSON çıktısı
 dashboard/public/can_dashboard.json

@@ -1,159 +1,136 @@
 # CAN Bus Simulator
 
-C dilinde yazılmış, gerçek CAN Bus protokolünü simüle eden bir proje.
-Hafta hafta inşa edildi — temel frame yapısından güvenlik modülüne kadar.
+> A CAN Bus protocol simulator written in C with a React dashboard.
+> Simulates 8 ECUs, arbitration, error handling, fuzzing, and anomaly detection.
 
 ---
 
-## Mimari
+> C dilinde yazılmış, gerçek CAN Bus protokolünü simüle eden bir proje.
+> 8 ECU, arbitration, hata yönetimi, fuzzing ve anomali tespiti içerir.
+
+---
+
+## Architecture / Mimari
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Uygulama Katmanı                     │
+│                     Application Layer / Uygulama Katmanı    │
 │                                                             │
-│   ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐   │
-│   │  Motor ECU  │  │   ABS ECU   │  │  Dashboard ECU   │   │
-│   │             │  │             │  │                  │   │
-│   │ RPM         │  │ Tekerlek hz │  │ Hepsini dinler   │   │
-│   │ Sıcaklık    │  │ Fren durumu │  │ JSON'a yazar     │   │
-│   │ Yakıt       │  │ ABS aktif   │  │                  │   │
-│   └──────┬──────┘  └──────┬──────┘  └────────┬─────────┘   │
-│          │                │                  │             │
-└──────────┼────────────────┼──────────────────┼─────────────┘
-           │                │                  │
-┌──────────▼────────────────▼──────────────────▼─────────────┐
-│                        Node Katmanı                         │
-│                                                             │
-│   ┌──────────────────────────────────────────────────────┐  │
-│   │  CANNode: ID, filtreler, hata sayacı, durum          │  │
-│   │  NORMAL → ERROR PASSIVE → BUS-OFF                    │  │
-│   └──────────────────────────┬───────────────────────────┘  │
-│                              │                              │
-└──────────────────────────────┼──────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────┐
-│                        Bus Katmanı                          │
-│                                                             │
-│   ┌──────────────────────────────────────────────────────┐  │
-│   │  CANBus: 32 slotluk ring buffer                      │  │
-│   │  Arbitration: en küçük ID önce geçer                 │  │
-│   │  Broadcast: mesaj herkese gider                      │  │
-│   └──────────────────────────────────────────────────────┘  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-           │                              │
-┌──────────▼──────────┐       ┌───────────▼───────────────────┐
-│   Frame Katmanı     │       │   Güvenlik Katmanı            │
-│                     │       │                               │
-│ CANFrame struct     │       │ CANFuzzer: 5 saldırı tipi     │
-│ Encode / Decode     │       │ CANDetector: 4 kural          │
-│ Bit Stuffing        │       │ anomali.log                   │
+│  Motor  ABS  Airbag  Klima  Direksiyon  Kabin  Lastik  Dash │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│                Node Layer / Node Katmanı                    │
+│   CANNode: ID, filters, error counter, NORMAL→BUS-OFF       │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│                 Bus Layer / Bus Katmanı                     │
+│   32-slot ring buffer · Arbitration · Broadcast             │
+└──────────────────────────┬──────────────────────────────────┘
+           ┌───────────────┴───────────────┐
+┌──────────▼──────────┐       ┌────────────▼──────────────────┐
+│   Frame Layer       │       │   Security Layer              │
+│   CANFrame struct   │       │   CANFuzzer: 5 attack types   │
+│   Encode / Decode   │       │   CANDetector: 4 rules        │
+│   Bit Stuffing      │       │   logs/anomali.log            │
 └─────────────────────┘       └───────────────────────────────┘
            │
 ┌──────────▼──────────────────────────────────────────────────┐
-│                     Araçlar                                 │
-│                                                             │
-│  CANLogger  → can_traffic.log  (candump formatı)            │
-│  CANParser  → log okuma, filtreleme, istatistik             │
-│  CANJson    → can_dashboard.json (React için)               │
-└─────────────────────────────────────────────────────────────┘
+│                      Tools / Araçlar                        │
+│  CANLogger → logs/can_traffic.log  (candump format)         │
+│  CANParser → read, filter, statistics                       │
+│  CANJson   → dashboard/public/can_dashboard.json            │
+└──────────┬──────────────────────────────────────────────────┘
            │
 ┌──────────▼──────────────────────────────────────────────────┐
 │                   React Dashboard                           │
-│                                                             │
-│  Her 100ms'de JSON okur → Gauge, BarGauge, durum ışıkları  │
+│   Polls JSON every 100ms · Gauges · Toast alerts            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Dosya Yapısı
+## File Structure / Dosya Yapısı
 
 ```
 CANBusProject/
-│
-├── can_frame.h/c       → CAN frame struct, encode/decode, bit stuffing
-├── can_bus.h/c         → Sanal bus, ring buffer, arbitration
-├── can_node.h/c        → ECU node, hata sayacı, bus-off
-├── can_error.h         → Hata tipleri ve durum sabitleri
-├── can_ids.h           → Bilinen mesaj ID'leri ve değer aralıkları
-│
-├── ecu_motor.h/c       → Motor ECU (RPM, sıcaklık, yakıt)
-├── ecu_abs.h/c         → ABS ECU (tekerlek hızı, fren)
-├── ecu_dashboard.h/c   → Dashboard ECU (hepsini dinler)
-│
-├── can_logger.h/c      → Bus trafiğini dosyaya logla
-├── can_parser.h/c      → Log dosyasını parse et, filtrele, istatistik
-├── can_json.h/c        → Dashboard verisini JSON'a yaz
-│
-├── can_fuzzer.h/c      → Geçersiz frame üretici
-├── can_detector.h/c    → Anomali tespit kural motoru
-│
-├── main.c              → Giriş noktası
-│
-└── dashboard/          → React uygulaması
-    └── src/
-        ├── App.jsx     → Ana component, JSON polling
-        ├── Gauge.jsx   → Dairesel gösterge (RPM, hız)
-        └── BarGauge.jsx→ Çubuk gösterge (yakıt, sıcaklık)
+├── src/
+│   ├── can_frame.h/c       → CAN frame struct, encode/decode, bit stuffing
+│   ├── can_bus.h/c         → Virtual bus, ring buffer, arbitration
+│   ├── can_node.h/c        → ECU node, error counter, bus-off
+│   ├── can_error.h         → Error types and state constants
+│   ├── can_ids.h           → Message IDs and value ranges
+│   ├── ecu_motor.h/c       → Engine ECU (RPM, temperature, fuel)
+│   ├── ecu_abs.h/c         → ABS ECU (wheel speed, brakes)
+│   ├── ecu_dashboard.h/c   → Dashboard ECU (listens to all)
+│   ├── ecu_airbag.h/c      → Airbag ECU (crash detection)
+│   ├── ecu_klima.h/c       → Climate ECU (A/C control)
+│   ├── ecu_direksiyon.h/c  → Steering ECU (angle, torque)
+│   ├── ecu_kabin.h/c       → Cabin temp ECU (interior/exterior)
+│   ├── ecu_lastik.h/c      → Tire pressure ECU (4 wheels, PSI)
+│   ├── can_logger.h/c      → Log bus traffic to file
+│   ├── can_parser.h/c      → Parse, filter, statistics
+│   ├── can_json.h/c        → Write dashboard data to JSON
+│   ├── can_fuzzer.h/c      → Invalid frame generator
+│   ├── can_detector.h/c    → Anomaly detection rule engine
+│   └── main.c              → Entry point
+├── dashboard/              → React application
+│   └── src/
+│       ├── App.jsx         → Main component, JSON polling, toasts
+│       ├── Gauge.jsx       → Circular gauge (RPM, speed, steering)
+│       └── BarGauge.jsx    → Bar gauge (fuel, temperature, pressure)
+├── logs/                   → Runtime log files (gitignored)
+├── bin/                    → Compiled binaries (gitignored)
+├── Makefile
+├── LICENSE
+└── README.md
 ```
 
 ---
 
-## Mesaj ID Tablosu
+## Message ID Table / Mesaj ID Tablosu
 
-| ID     | Kaynak    | İçerik              | DLC | Değer Aralığı     |
-|--------|-----------|---------------------|-----|-------------------|
-| 0x100  | Motor ECU | RPM                 | 2   | 0 – 8000          |
-| 0x101  | Motor ECU | Sıcaklık (°C)       | 1   | 0 – 120           |
-| 0x102  | Motor ECU | Yakıt (%)           | 1   | 0 – 100           |
-| 0x200  | ABS ECU   | Tekerlek hızları    | 4   | 0 – 250 km/h      |
-| 0x201  | ABS ECU   | Fren / ABS durumu   | 2   | 0 veya 1          |
-
----
-
-## Haftalık İlerleme
-
-| Hafta | Konu                        | Dosyalar                              |
-|-------|-----------------------------|---------------------------------------|
-| 1     | CAN Frame Temeli            | can_frame.h/c                         |
-| 2     | Bus ve Node Sistemi         | can_bus.h/c, can_node.h/c             |
-| 3     | ECU Simülasyonları          | ecu_motor, ecu_abs, ecu_dashboard     |
-| 4     | Arbitration ve Hata Yönetimi| can_error.h, bit stuffing             |
-| 5     | Loglama ve Parser           | can_logger, can_parser                |
-| 6     | React Dashboard             | dashboard/                            |
-| 7     | Fuzzing ve Güvenlik         | can_fuzzer, can_detector              |
-| 8     | Dokümantasyon               | README.md                             |
+| ID     | Source / Kaynak | Content / İçerik     | DLC | Range / Aralık  |
+|--------|-----------------|----------------------|-----|-----------------|
+| 0x100  | Engine ECU      | RPM                  | 2   | 0 – 8000        |
+| 0x101  | Engine ECU      | Temperature (°C)     | 1   | 0 – 120         |
+| 0x102  | Engine ECU      | Fuel (%)             | 1   | 0 – 100         |
+| 0x200  | ABS ECU         | Wheel speeds         | 4   | 0 – 250 km/h    |
+| 0x201  | ABS ECU         | Brake / ABS status   | 2   | 0 or 1          |
+| 0x300  | Airbag ECU      | Crash / deployed     | 1   | 0 or 1          |
+| 0x301  | Climate ECU     | Target temp, A/C     | 2   | 16–30 °C        |
+| 0x302  | Steering ECU    | Angle, torque        | 4   | ±540°, 0–100 Nm |
+| 0x303  | Cabin ECU       | Interior/exterior °C | 2   | -20 – 50 °C     |
+| 0x304  | Tire ECU        | 4-wheel pressure     | 4   | 20 – 40 PSI     |
 
 ---
 
-## Derleme ve Çalıştırma
+## Build & Run / Derleme ve Çalıştırma
 
-### Gereksinimler
-- GCC (MinGW Windows'ta)
-- Node.js 18+ (React dashboard için)
+### Requirements / Gereksinimler
+- GCC (MinGW on Windows)
+- Node.js 18+
 
-### C Simülatörü
+### C Simulator
 
 ```bash
-# Fuzzing testi
-gcc -o can_test main.c can_frame.c can_bus.c can_node.c \
-    can_logger.c can_parser.c can_fuzzer.c can_detector.c \
-    ecu_motor.c ecu_abs.c ecu_dashboard.c
-./can_test
+# Build both targets
+make
 
-# Canlı dashboard simülatörü
-gcc -o can_sim main.c can_frame.c can_bus.c can_node.c \
-    can_json.c ecu_motor.c ecu_abs.c ecu_dashboard.c
-./can_sim
+# Build + run simulator and dashboard
+make run
+
+# Clean binaries and logs
+make clean
 ```
 
-### Log Araçları (candump benzeri)
+### Log Tools / Log Araçları
 
 ```bash
-./can_test --oku                  # tüm log'u göster
-./can_test --filtre 100           # sadece 0x100 ID'li mesajlar
-./can_test --istatistik           # ID bazlı istatistik
+bin/can_test --oku              # show all logs
+bin/can_test --filtre 100       # filter by ID 0x100
+bin/can_test --istatistik       # per-ID statistics
 ```
 
 ### React Dashboard
@@ -162,33 +139,38 @@ gcc -o can_sim main.c can_frame.c can_bus.c can_node.c \
 cd dashboard
 npm install
 npm run dev
-# Tarayıcıda: http://localhost:5173
+# Open: http://localhost:5173
 ```
 
-> React dashboard çalışırken `can_sim` de çalışıyor olmalı.
+> The React dashboard must run alongside `bin/can_sim`.
 
 ---
 
-## Uygulanan CAN Protokol Özellikleri
+## CAN Protocol Features / Uygulanan CAN Protokol Özellikleri
 
-- **Arbitration**: Aynı anda birden fazla node mesaj göndermek isterse, ID'si küçük olan kazanır. Gerçek CAN'da dominant bit (0) recessive bit'i (1) ezer.
-- **Broadcast**: Mesaj tüm node'lara gider, her node kendi filtresine göre okur.
-- **Bit Stuffing**: 5 aynı bit üst üste gelirse araya zıt bit eklenir, alıcı bunu çıkarır.
-- **Hata Yönetimi**: Hata sayacı 128'i geçince Error Passive, 256'yı geçince Bus-Off. Bus-Off'ta node susturulur.
-- **Big-Endian ID**: ID 4 byte'a büyük byte önce yazılır, `memcmp` ile sıralama korunur.
+- **Arbitration**: Lowest ID wins. Mirrors real CAN dominant-bit behavior.
+- **Broadcast**: Every message reaches all nodes; each node filters by ID.
+- **Bit Stuffing**: After 5 identical bits, an opposite bit is inserted and stripped on receive.
+- **Error Management**: TEC/REC counters → Error Passive at 128, Bus-Off at 256.
+- **Big-Endian ID**: 4-byte ID, MSB first, enabling `memcmp`-based ordering.
 
 ---
 
-## Güvenlik Modülü
+## Security Module / Güvenlik Modülü
 
-Fuzzer 5 farklı saldırı tipi üretir:
+| Attack Type / Saldırı Tipi | Description / Açıklama                        |
+|----------------------------|-----------------------------------------------|
+| Invalid DLC                | DLC > 8, outside protocol spec                |
+| Unknown ID                 | Undefined message ID                          |
+| Value overflow             | Known ID but value out of range (RPM=60000)   |
+| Flood                      | Too many messages from same ID in short time  |
+| Random                     | All fields completely randomized              |
 
-| Tip               | Açıklama                                      |
-|-------------------|-----------------------------------------------|
-| Geçersiz DLC      | DLC > 8, frame boyutu protokol dışı           |
-| Bilinmeyen ID     | Tanımsız mesaj ID'si                          |
-| Değer taşma       | Bilinen ID ama değer aralık dışı (RPM=60000)  |
-| Flood             | Aynı ID'den kısa sürede çok fazla mesaj       |
-| Rastgele          | Her alanı tamamen rastgele                    |
+Detector applies 4 rules and writes anomalies to `logs/anomali.log`.
+Dashboard shows toast notifications for detected anomalies.
 
-Detector 4 kural ile anomali yakalar ve `anomali.log`'a yazar.
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

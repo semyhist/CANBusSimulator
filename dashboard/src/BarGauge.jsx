@@ -1,7 +1,8 @@
 /* Çubuk gösterge — yakıt ve sıcaklık için */
-export default function BarGauge({ label, value, min, max, unit, renk, uyariEsigi }) {
+export default function BarGauge({ label, value, min, max, unit, renk, uyariEsigi, uyariAlti }) {
   const yuzde  = Math.min(Math.max((value - min) / (max - min), 0), 1) * 100;
-  const aktifRenk = uyariEsigi && value >= uyariEsigi ? "#e74c3c" : renk;
+  const uyariVar = uyariAlti ? (uyariEsigi && value <= uyariEsigi) : (uyariEsigi && value >= uyariEsigi);
+  const aktifRenk = uyariVar ? "#e74c3c" : renk;
 
   return (
     <div style={{ width: "140px" }}>
@@ -17,7 +18,6 @@ export default function BarGauge({ label, value, min, max, unit, renk, uyariEsig
           height: "100%",
           background: aktifRenk,
           borderRadius: "6px",
-          transition: "width 0.2s ease",
         }} />
       </div>
       <div style={{ color: "white", fontSize: "16px", fontWeight: "bold", marginTop: "4px" }}>

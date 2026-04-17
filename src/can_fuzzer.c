@@ -5,9 +5,10 @@
 /* bilinen id listesi — fuzzer bunlarin disinda id uretebilir */
 static unsigned int bilinen_idler[] = {
     ID_MOTOR_RPM, ID_MOTOR_SICAK, ID_MOTOR_YAKIT,
-    ID_ABS_TEKERLEK, ID_ABS_FREN
+    ID_ABS_TEKERLEK, ID_ABS_FREN,
+    ID_AIRBAG, ID_KLIMA, ID_DIREKSIYON, ID_KABIN, ID_LASTIK
 };
-static int bilinen_id_sayisi = 5;
+static int bilinen_id_sayisi = 10;
 
 void fuzzer_baslat(CANFuzzer *fuzzer, CANBus *bus)
 {
@@ -49,7 +50,12 @@ void fuzzer_gonder(CANFuzzer *fuzzer, int tip)
                  frame.id == ID_MOTOR_SICAK  ||
                  frame.id == ID_MOTOR_YAKIT  ||
                  frame.id == ID_ABS_TEKERLEK ||
-                 frame.id == ID_ABS_FREN);
+                 frame.id == ID_ABS_FREN     ||
+                 frame.id == ID_AIRBAG       ||
+                 frame.id == ID_KLIMA        ||
+                 frame.id == ID_DIREKSIYON   ||
+                 frame.id == ID_KABIN        ||
+                 frame.id == ID_LASTIK);
         frame.dlc = rand() % 9;
         for (i = 0; i < frame.dlc; i++)
             frame.data[i] = rand() % 256;

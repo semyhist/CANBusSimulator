@@ -67,7 +67,12 @@ int detector_kontrol(CANDetector *detector, CANFrame *frame, double timestamp)
         frame->id != ID_MOTOR_SICAK  &&
         frame->id != ID_MOTOR_YAKIT  &&
         frame->id != ID_ABS_TEKERLEK &&
-        frame->id != ID_ABS_FREN) {
+        frame->id != ID_ABS_FREN     &&
+        frame->id != ID_AIRBAG       &&
+        frame->id != ID_KLIMA        &&
+        frame->id != ID_DIREKSIYON   &&
+        frame->id != ID_KABIN        &&
+        frame->id != ID_LASTIK) {
         anomali_logla(detector, frame, timestamp,
                       "Bilinmeyen ID");
         return ANOMALI_BILINMEYEN_ID;
