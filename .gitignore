@@ -1,0 +1,18 @@
+# Derleme çıktıları
+*.exe
+*.o
+*.out
+
+# Log dosyaları
+*.log
+
+# JSON çıktısı
+dashboard/public/can_dashboard.json
+
+# React
+dashboard/node_modules/
+dashboard/dist/
+
+# IDE
+.vscode/
+*.user
