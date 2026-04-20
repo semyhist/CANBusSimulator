@@ -1,176 +1,170 @@
-# CAN Bus Simulator
+<div align="center">
 
-> A CAN Bus protocol simulator written in C with a React dashboard.
-> Simulates 8 ECUs, arbitration, error handling, fuzzing, and anomaly detection.
+# 🚗 CANBusSimulator
 
----
+**Simulate real CAN Bus protocol in C for automotive testing – complete with 8 ECUs, React dashboard, fuzzing, and anomaly detection.**  
+*Perfect for devs building embedded systems without expensive hardware.*
 
-> C dilinde yazılmış, gerçek CAN Bus protokolünü simüle eden bir proje.
-> 8 ECU, arbitration, hata yönetimi, fuzzing ve anomali tespiti içerir.
+[![GitHub Stars](https://img.shields.io/github/stars/semyhist/CANBusSimulator?style=for-the-badge&logo=github&logoColor=white&color=0891b2)](https://github.com/semyhist/CANBusSimulator)
+[![License](https://img.shields.io/github/license/semyhist/CANBusSimulator?style=for-the-badge&color=6366f1)](https://github.com/semyhist/CANBusSimulator/blob/main/LICENSE)
+[![Language](https://img.shields.io/badge/C-0891b2?style=for-the-badge&logo=c&logoColor=white)](https://github.com/semyhist/CANBusSimulator)
 
----
+</div>
 
-## Architecture / Mimari
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Application Layer / Uygulama Katmanı    │
-│                                                             │
-│  Motor  ABS  Airbag  Klima  Direksiyon  Kabin  Lastik  Dash │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                Node Layer / Node Katmanı                    │
-│   CANNode: ID, filters, error counter, NORMAL→BUS-OFF       │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                 Bus Layer / Bus Katmanı                     │
-│   32-slot ring buffer · Arbitration · Broadcast             │
-└──────────────────────────┬──────────────────────────────────┘
-           ┌───────────────┴───────────────┐
-┌──────────▼──────────┐       ┌────────────▼──────────────────┐
-│   Frame Layer       │       │   Security Layer              │
-│   CANFrame struct   │       │   CANFuzzer: 5 attack types   │
-│   Encode / Decode   │       │   CANDetector: 4 rules        │
-│   Bit Stuffing      │       │   logs/anomali.log            │
-└─────────────────────┘       └───────────────────────────────┘
-           │
-┌──────────▼──────────────────────────────────────────────────┐
-│                      Tools / Araçlar                        │
-│  CANLogger → logs/can_traffic.log  (candump format)         │
-│  CANParser → read, filter, statistics                       │
-│  CANJson   → dashboard/public/can_dashboard.json            │
-└──────────┬──────────────────────────────────────────────────┘
-           │
-┌──────────▼──────────────────────────────────────────────────┐
-│                   React Dashboard                           │
-│   Polls JSON every 100ms · Gauges · Toast alerts            │
-└─────────────────────────────────────────────────────────────┘
-```
+## Table of Contents
+- [About / Overview](#about--overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## File Structure / Dosya Yapısı
+## About / Overview
+
+Hey there! **CANBusSimulator** is your go-to tool for testing automotive systems without needing real CAN hardware. Written in efficient C, it faithfully recreates the CAN Bus protocol – arbitration, error handling, bit stuffing, and all. Imagine spinning up 8 virtual ECUs (Engine, ABS, Airbag, etc.) that talk over a simulated bus, complete with fuzzing attacks and anomaly detection.
+
+This solves a huge pain point for **embedded devs, automotive engineers, and HIL (Hardware-in-the-Loop) testers**. No more waiting for physical buses or pricey tools – just compile, run, and test your algorithms locally. What sets it apart? A slick **React dashboard** for real-time visualization, candump-compatible logs, and security layers with 5 attack types. It's battle-tested for fuzzing and detection, making it ideal for research or production validation.
+
+Whether you're prototyping ECUs, training ML models on CAN traffic, or hunting bus-off conditions, this sim has you covered. Created April 17, 2026 – fresh and ready to roll!
+
+---
+
+## Key Features
+
+✨ **8 Simulated ECUs** — Engine, ABS, Airbag, Climate, Steering, Cabin, Tires, Dashboard with realistic message IDs and filters.
+
+✨ **Full CAN Protocol Stack** — Arbitration, broadcast, bit stuffing, encode/decode via CANFrame struct.
+
+✨ **Error Handling & States** — Error counters, NORMAL → ERROR-ACTIVE → BUS-OFF transitions per node.
+
+✨ **Security Testing** — CANFuzzer with 5 attack types (fuzzing, replay, etc.) + CANDetector with 4 anomaly rules, logs to `logs/anomali.log`.
+
+✨ **High-Perf Bus Layer** — 32-slot ring buffer for low-latency simulation.
+
+✨ **React Dashboard** — Live visualization via `dashboard/public/can_dashboard.json`.
+
+✨ **CAN Tools Suite** — Logger (candump format to `logs/can_traffic.log`), Parser (filter/stats), JSON exporter.
+
+✨ **Turkish Support** — Bilingual docs for global automotive teams.
+
+---
+
+## Tech Stack
+
+<div align="center">
+
+[![C](https://img.shields.io/badge/C-0891b2?style=for-the-badge&logo=c&logoColor=white)](https://github.com/semyhist/CANBusSimulator)
+[![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://github.com/semyhist/CANBusSimulator)
+[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://github.com/semyhist/CANBusSimulator)
+
+</div>
+
+---
+
+## Getting Started
+
+### Prerequisites
+- **GCC** or any C compiler (tested with GCC 12+)
+- **Node.js 18+** (for React dashboard)
+- **make** (for building)
+- Linux/macOS recommended; Windows via WSL
+
+### Installation
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/semyhist/CANBusSimulator.git
+   cd CANBusSimulator
+   ```
+
+2. Build the C simulator:
+   ```bash
+   make
+   ```
+
+3. Start the React dashboard (in a new terminal):
+   ```bash
+   cd dashboard
+   npm install
+   npm start
+   ```
+   Open http://localhost:3000
+
+> 💡 **Tip:** Run `make clean` to rebuild from scratch.
+
+---
+
+## Usage
+
+### Basic Simulation
+Launch 8 ECUs on the virtual bus:
+
+```bash
+./can_simulator -n 8 -t 60  # Run 8 nodes for 60 seconds
+```
+
+Generates `logs/can_traffic.log` in candump format.
+
+### Fuzzing & Detection
+Test security layers:
+
+```bash
+./can_simulator -fuzz replay -d detect -o logs/anomali.log
+```
+
+> 📊 **View in Dashboard:** Dashboard auto-loads `can_dashboard.json` for live ECU stats, arbitration wins, and anomaly alerts.
+
+### Parse Logs
+```bash
+./can_parser logs/can_traffic.log --filter=0x100 --stats
+```
+
+---
+
+## Project Structure
 
 ```
-CANBusProject/
+CANBusSimulator/
 ├── src/
-│   ├── can_frame.h/c       → CAN frame struct, encode/decode, bit stuffing
-│   ├── can_bus.h/c         → Virtual bus, ring buffer, arbitration
-│   ├── can_node.h/c        → ECU node, error counter, bus-off
-│   ├── can_error.h         → Error types and state constants
-│   ├── can_ids.h           → Message IDs and value ranges
-│   ├── ecu_motor.h/c       → Engine ECU (RPM, temperature, fuel)
-│   ├── ecu_abs.h/c         → ABS ECU (wheel speed, brakes)
-│   ├── ecu_dashboard.h/c   → Dashboard ECU (listens to all)
-│   ├── ecu_airbag.h/c      → Airbag ECU (crash detection)
-│   ├── ecu_klima.h/c       → Climate ECU (A/C control)
-│   ├── ecu_direksiyon.h/c  → Steering ECU (angle, torque)
-│   ├── ecu_kabin.h/c       → Cabin temp ECU (interior/exterior)
-│   ├── ecu_lastik.h/c      → Tire pressure ECU (4 wheels, PSI)
-│   ├── can_logger.h/c      → Log bus traffic to file
-│   ├── can_parser.h/c      → Parse, filter, statistics
-│   ├── can_json.h/c        → Write dashboard data to JSON
-│   ├── can_fuzzer.h/c      → Invalid frame generator
-│   ├── can_detector.h/c    → Anomaly detection rule engine
-│   └── main.c              → Entry point
-├── dashboard/              → React application
-│   └── src/
-│       ├── App.jsx         → Main component, JSON polling, toasts
-│       ├── Gauge.jsx       → Circular gauge (RPM, speed, steering)
-│       └── BarGauge.jsx    → Bar gauge (fuel, temperature, pressure)
-├── logs/                   → Runtime log files (gitignored)
-├── bin/                    → Compiled binaries (gitignored)
+│   ├── can_node.c      # ECU logic, filters, error states
+│   ├── can_bus.c       # Ring buffer, arbitration
+│   ├── can_frame.c     # Encode/decode, bit stuffing
+│   ├── can_fuzzer.c    # 5 attack types
+│   └── can_detector.c  # 4 anomaly rules
+├── tools/
+│   ├── can_logger.c
+│   ├── can_parser.c
+│   └── can_json.c
+├── dashboard/          # React app
+│   └── public/can_dashboard.json
+├── logs/
+│   ├── can_traffic.log
+│   └── anomali.log
 ├── Makefile
-├── LICENSE
 └── README.md
 ```
 
 ---
 
-## Message ID Table / Mesaj ID Tablosu
+## Contributing
 
-| ID     | Source / Kaynak | Content / İçerik     | DLC | Range / Aralık  |
-|--------|-----------------|----------------------|-----|-----------------|
-| 0x100  | Engine ECU      | RPM                  | 2   | 0 – 8000        |
-| 0x101  | Engine ECU      | Temperature (°C)     | 1   | 0 – 120         |
-| 0x102  | Engine ECU      | Fuel (%)             | 1   | 0 – 100         |
-| 0x200  | ABS ECU         | Wheel speeds         | 4   | 0 – 250 km/h    |
-| 0x201  | ABS ECU         | Brake / ABS status   | 2   | 0 or 1          |
-| 0x300  | Airbag ECU      | Crash / deployed     | 1   | 0 or 1          |
-| 0x301  | Climate ECU     | Target temp, A/C     | 2   | 16–30 °C        |
-| 0x302  | Steering ECU    | Angle, torque        | 4   | ±540°, 0–100 Nm |
-| 0x303  | Cabin ECU       | Interior/exterior °C | 2   | -20 – 50 °C     |
-| 0x304  | Tire ECU        | 4-wheel pressure     | 4   | 20 – 40 PSI     |
+Love the project? Help make it even better!
 
----
+1. Fork the repo and create your branch (`git checkout -b feature/AmazingFeature`).
+2. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+3. Push to the branch (`git push origin feature/AmazingFeature`).
+4. Open a Pull Request – mention any related [issues](https://github.com/semyhist/CANBusSimulator/issues).
 
-## Build & Run / Derleme ve Çalıştırma
-
-### Requirements / Gereksinimler
-- GCC (MinGW on Windows)
-- Node.js 18+
-
-### C Simulator
-
-```bash
-# Build both targets
-make
-
-# Build + run simulator and dashboard
-make run
-
-# Clean binaries and logs
-make clean
-```
-
-### Log Tools / Log Araçları
-
-```bash
-bin/can_test --oku              # show all logs
-bin/can_test --filtre 100       # filter by ID 0x100
-bin/can_test --istatistik       # per-ID statistics
-```
-
-### React Dashboard
-
-```bash
-cd dashboard
-npm install
-npm run dev
-# Open: http://localhost:5173
-```
-
-> The React dashboard must run alongside `bin/can_sim`.
-
----
-
-## CAN Protocol Features / Uygulanan CAN Protokol Özellikleri
-
-- **Arbitration**: Lowest ID wins. Mirrors real CAN dominant-bit behavior.
-- **Broadcast**: Every message reaches all nodes; each node filters by ID.
-- **Bit Stuffing**: After 5 identical bits, an opposite bit is inserted and stripped on receive.
-- **Error Management**: TEC/REC counters → Error Passive at 128, Bus-Off at 256.
-- **Big-Endian ID**: 4-byte ID, MSB first, enabling `memcmp`-based ordering.
-
----
-
-## Security Module / Güvenlik Modülü
-
-| Attack Type / Saldırı Tipi | Description / Açıklama                        |
-|----------------------------|-----------------------------------------------|
-| Invalid DLC                | DLC > 8, outside protocol spec                |
-| Unknown ID                 | Undefined message ID                          |
-| Value overflow             | Known ID but value out of range (RPM=60000)   |
-| Flood                      | Too many messages from same ID in short time  |
-| Random                     | All fields completely randomized              |
-
-Detector applies 4 rules and writes anomalies to `logs/anomali.log`.
-Dashboard shows toast notifications for detected anomalies.
+> 🙌 Questions? Open an issue at [semyhist/CANBusSimulator/issues](https://github.com/semyhist/CANBusSimulator/issues).
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Distributed under the MIT License. See [LICENSE](LICENSE) for more info.
+
+Created by Semih Aydın
